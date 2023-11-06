@@ -43,11 +43,11 @@ public class RedisSentinelTest extends BaseTest {
 
             RedisAsyncCommands<String, String> asyncCmd = conn.async();
             RedisFuture<String> future = asyncCmd.set("todo1", "{" +
-                    "  \"userId\": 1," +
-                    "  \"id\": 1," +
-                    "  \"title\": \"Clean the Room\"," +
-                    "  \"completed\": false" +
-                    "}");
+                                                                "  \"userId\": 1," +
+                                                                "  \"id\": 1," +
+                                                                "  \"title\": \"Clean the Room\"," +
+                                                                "  \"completed\": false" +
+                                                                "}");
             future.thenAccept(result -> {
                 System.out.println("Set operation result: " + result);
                 // 檢查操作是否成功
@@ -72,6 +72,8 @@ public class RedisSentinelTest extends BaseTest {
         //sentinel
         RedisURI sentinelUri = RedisURI.builder()
             .withSentinel("127.0.0.1", 26379, "sa12345") // 哨兵地址和密码
+            .withSentinel("127.0.0.1", 26380, "sa12345") // 哨兵地址和密码
+            .withSentinel("127.0.0.1", 26381, "sa12345") // 哨兵地址和密码
             .withSentinelMasterId("mymaster") // 被監控的 Redis Master 群組名稱
             // .withPassword("sa123456".toCharArray()) // 設定被監控端的 Redis Master 密碼
             .build();
@@ -86,7 +88,18 @@ public class RedisSentinelTest extends BaseTest {
     @DisplayName("[test_004] 測試連線到 Redis Sentinel 使用 RedisURI.create")
     // @Disabled
     public void test_004() {
-        RedisURI uri = RedisURI.create("redis-sentinel://sa12345@127.0.0.1:26379,127.0.0.1:26380,127.0.0.1:26381/0#mymaster");
+
+        // RedisURI uri = RedisURI.create("redis-sentinel://sa12345@127.0.0.1:26379/0#mymaster"); // 失敗
+        // RedisURI uri = RedisURI.create("redis-sentinel://sa12345@127.0.0.1:26379,sa12345@127.0.0.1:26380,sa12345@127.0.0.1:26381/0#mymaster"); // 失敗
+
+        RedisURI uri = RedisURI.builder()
+            .withSentinel("127.0.0.1", 26379, "sa12345") // sentinel 本身的密碼
+            .withSentinel("127.0.0.1", 26380, "sa12345") // sentinel 本身的密碼
+            .withSentinel("127.0.0.1", 26381, "sa12345") // sentinel 本身的密碼
+            .withSentinelMasterId("mymaster")
+            .withPassword("sa123456") // 被監控端的密碼
+            .build();
+
         // System.out.println(redisURI);
         RedisClient redisClient = RedisClient.create(uri);
         redisClient.setOptions(
