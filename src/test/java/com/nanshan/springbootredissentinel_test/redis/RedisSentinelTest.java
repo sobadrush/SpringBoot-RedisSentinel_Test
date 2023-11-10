@@ -69,36 +69,39 @@ public class RedisSentinelTest extends BaseTest {
     // @Disabled
     // ref. https://blog.csdn.net/FlyLikeButterfly/article/details/124496285
     public void test_003() {
-        //sentinel
+        // sentinel
         RedisURI sentinelUri = RedisURI.builder()
-            .withSentinel("127.0.0.1", 26379, "sa12345") // 哨兵地址和密码
-            .withSentinel("127.0.0.1", 26380, "sa12345") // 哨兵地址和密码
-            .withSentinel("127.0.0.1", 26381, "sa12345") // 哨兵地址和密码
+            // 只需連一台，會自動拓樸到其他台 sentinel
+            .withSentinel("127.0.0.1", 26379, "sa12345") // 哨兵地址和密码 sentinel1
+            // .withSentinel("127.0.0.1", 26380, "sa12345") // 哨兵地址和密码 sentinel2
+            // .withSentinel("127.0.0.1", 26381, "sa12345") // 哨兵地址和密码 sentinel3
             .withSentinelMasterId("mymaster") // 被監控的 Redis Master 群組名稱
-            // .withPassword("sa123456".toCharArray()) // 設定被監控端的 Redis Master 密碼
             .build();
+
         RedisClient sentinelClient = RedisClient.create(sentinelUri);
         StatefulRedisSentinelConnection<String, String> sentinelConn = sentinelClient.connectSentinel();
         RedisSentinelCommands<String, String> sentinelCmd = sentinelConn.sync();
         System.out.println(sentinelCmd.info("sentinel"));
     }
 
-    // FixMe: Cannot connect Redis Sentinel at redis://127.0.0.1:26381
+    // FixMe: 會發生  Network is unreachable: /172.24.0.2:6379 → 待解決
+    // ref「Notion」. https://www.notion.so/roger-workspace/Redis-Sentinel-6dddcddf4a254269b280a1e6b421baf2?pvs=4
     @Test
     @DisplayName("[test_004] 測試連線到 Redis Sentinel 使用 RedisURI.create")
     // @Disabled
     public void test_004() {
-
-        // RedisURI uri = RedisURI.create("redis-sentinel://sa12345@127.0.0.1:26379/0#mymaster"); // 失敗
-        // RedisURI uri = RedisURI.create("redis-sentinel://sa12345@127.0.0.1:26379,sa12345@127.0.0.1:26380,sa12345@127.0.0.1:26381/0#mymaster"); // 失敗
-
         RedisURI uri = RedisURI.builder()
             .withSentinel("127.0.0.1", 26379, "sa12345") // sentinel 本身的密碼
-            .withSentinel("127.0.0.1", 26380, "sa12345") // sentinel 本身的密碼
-            .withSentinel("127.0.0.1", 26381, "sa12345") // sentinel 本身的密碼
+            // .withSentinel("127.0.0.1", 26380, "sa12345") // sentinel 本身的密碼
+            // .withSentinel("127.0.0.1", 26381, "sa12345") // sentinel 本身的密碼
             .withSentinelMasterId("mymaster")
-            .withPassword("sa123456") // 被監控端的密碼
+            // .withPassword("sa123456") // 被監控端的密碼
+            // .withHost("127.0.0.1")
+            // .withPort(6379)
+            // .withDatabase(0)
             .build();
+
+        // RedisURI uri = RedisURI.create("redis-sentinel://sa12345@127.0.0.1:26379/1#mymaster");
 
         // System.out.println(redisURI);
         RedisClient redisClient = RedisClient.create(uri);
@@ -109,7 +112,7 @@ public class RedisSentinelTest extends BaseTest {
                 .build()
         );
         StatefulRedisMasterReplicaConnection<String, String> connection
-                = MasterReplica.connect(redisClient, StringCodec.UTF8, uri);
+                            = MasterReplica.connect(redisClient, StringCodec.UTF8, uri);
         connection.setReadFrom(ReadFrom.REPLICA_PREFERRED);
     }
 }
