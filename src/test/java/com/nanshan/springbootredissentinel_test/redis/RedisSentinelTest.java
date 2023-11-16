@@ -64,11 +64,32 @@ public class RedisSentinelTest extends BaseTest {
         }
     }
 
+
     @Test
-    @DisplayName("[test_003] 測試連線到 Redis Sentinel 本人")
+    @DisplayName("[test_003] 測試連線到 Redis Master-Replica")
     // @Disabled
     // ref. https://blog.csdn.net/FlyLikeButterfly/article/details/124496285
     public void test_003() {
+        RedisURI sentinelUri = RedisURI.builder()
+                .withHost("127.0.0.1").withPort(6379) // master
+                // .withHost("127.0.0.1").withPort(6380) // slave
+                // .withHost("127.0.0.1").withPort(6381) // slave
+                .withPassword("sa123456")
+                .build();
+        RedisClient sentinelClient = RedisClient.create(sentinelUri);
+        StatefulRedisSentinelConnection<String, String> sentinelConn = sentinelClient.connectSentinel();
+        RedisSentinelCommands<String, String> sentinelCmd = sentinelConn.sync();
+        System.out.println("=-=-=-=-=-=-=-=-=-=-=-=");
+        System.err.println(">> [info replication] >> " + sentinelCmd.info("replication"));
+        System.out.println("=-=-=-=-=-=-=-=-=-=-=-=");
+    }
+
+
+    @Test
+    @DisplayName("[test_004] 測試連線到 Redis Sentinel 本人")
+    // @Disabled
+    // ref. https://blog.csdn.net/FlyLikeButterfly/article/details/124496285
+    public void test_004() {
         // sentinel
         RedisURI sentinelUri = RedisURI.builder()
             // 只需連一台，會自動拓樸到其他台 sentinel
@@ -81,27 +102,29 @@ public class RedisSentinelTest extends BaseTest {
         RedisClient sentinelClient = RedisClient.create(sentinelUri);
         StatefulRedisSentinelConnection<String, String> sentinelConn = sentinelClient.connectSentinel();
         RedisSentinelCommands<String, String> sentinelCmd = sentinelConn.sync();
-        System.out.println(sentinelCmd.info("sentinel"));
+        System.out.println("=-=-=-=-=-=-=-=-=-=-=-=");
+        System.err.println(">> [info sentinel] >> " + sentinelCmd.info("sentinel"));
+        System.out.println("=-=-=-=-=-=-=-=-=-=-=-=");
     }
 
     // FixMe: 會發生  Network is unreachable: /172.24.0.2:6379 → 待解決
     // ref「Notion」. https://www.notion.so/roger-workspace/Redis-Sentinel-6dddcddf4a254269b280a1e6b421baf2?pvs=4
     @Test
-    @DisplayName("[test_004] 測試連線到 Redis Sentinel 使用 RedisURI.create")
+    @DisplayName("[test_005] 測試連線到 Redis Sentinel 使用 RedisURI.create")
     // @Disabled
-    public void test_004() {
-        RedisURI uri = RedisURI.builder()
-            .withSentinel("127.0.0.1", 26379, "sa12345") // sentinel 本身的密碼
-            // .withSentinel("127.0.0.1", 26380, "sa12345") // sentinel 本身的密碼
-            // .withSentinel("127.0.0.1", 26381, "sa12345") // sentinel 本身的密碼
-            .withSentinelMasterId("mymaster")
-            // .withPassword("sa123456") // 被監控端的密碼
-            // .withHost("127.0.0.1")
-            // .withPort(6379)
-            // .withDatabase(0)
-            .build();
+    public void test_005() {
+        // RedisURI uri = RedisURI.builder()
+        //     .withSentinel("127.0.0.1", 26379, "sa12345") // sentinel 本身的密碼
+        //     // .withSentinel("127.0.0.1", 26380, "sa12345") // sentinel 本身的密碼
+        //     // .withSentinel("127.0.0.1", 26381, "sa12345") // sentinel 本身的密碼
+        //     .withSentinelMasterId("mymaster")
+        //     // .withPassword("sa123456") // 被監控端的密碼
+        //     // .withHost("127.0.0.1")
+        //     // .withPort(6379)
+        //     // .withDatabase(0)
+        //     .build();
 
-        // RedisURI uri = RedisURI.create("redis-sentinel://sa12345@127.0.0.1:26379/1#mymaster");
+        RedisURI uri = RedisURI.create("redis-sentinel://sa123456@127.0.0.1:26379/1#mymaster");
 
         // System.out.println(redisURI);
         RedisClient redisClient = RedisClient.create(uri);
